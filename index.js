@@ -8,6 +8,8 @@ const cron = require('node-cron');
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { getMembershipStatus } = require('./dateStatus');
+const isAdmin = require('./middlewares/isAdmin');
+
 
 const app = express();
 
@@ -202,6 +204,19 @@ app.post('/auth/confirm-reset', async (req, res) => {
 /* =========================
    CUSTOMERS (PROTECTED)
 ========================= */
+
+app.get(
+  '/admin/test',
+  authMiddleware,
+  isAdmin,
+  (req, res) => {
+    res.json({
+      message: 'Acceso admin confirmado',
+      user: req.user
+    });
+  }
+);
+
 app.get('/customers', authMiddleware, async (req, res) => {
   const { data, error } = await supabase
     .from('customers')
