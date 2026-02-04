@@ -1,0 +1,10 @@
+/* src/index.css */
+
+/* Importa las bases de Tailwind */
+@tailwind base;
+
+/* Componentes predefinidos de Tailwind */
+@tailwind components;
+
+/* Utilidades (márgenes, colores, textos, etc.) */
+@tailwind utilities;
