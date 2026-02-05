@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom"
 import { fetchCustomers } from "../../api/customers"
 
 export default function Dashboard() {
+
   const navigate = useNavigate()
 
   const [customers, setCustomers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+
     const load = async () => {
       try {
         const data = await fetchCustomers()
@@ -21,15 +23,27 @@ export default function Dashboard() {
     }
 
     load()
+
   }, [])
 
   const total = customers.length
   const today = new Date()
 
-const unpaid = customers.filter(
-  (c) => new Date(c.due_date) < today
-).length
+  /* =====================
+     PENDIENTES DE PAGO
+  ===================== */
+  const unpaid = customers.filter(
+    (c) =>
+      c.status !== "inactive" &&
+      new Date(c.due_date) < today
+  ).length
 
+  /* =====================
+     INACTIVOS
+  ===================== */
+  const inactive = customers.filter(
+    (c) => c.status === "inactive"
+  ).length
 
   if (loading) {
     return <div className="text-white">Cargando dashboard...</div>
@@ -44,7 +58,7 @@ const unpaid = customers.filter(
       </h1>
 
       {/* CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
         {/* TOTAL AFILIADOS */}
         <div
@@ -71,6 +85,20 @@ const unpaid = customers.filter(
 
           <p className="text-5xl font-bold text-white mt-4">
             {unpaid}
+          </p>
+        </div>
+
+        {/* INACTIVOS */}
+        <div
+          onClick={() => navigate("/dashboard/inactive")}
+          className="cursor-pointer bg-purple-600 hover:bg-purple-700 p-6 rounded-xl shadow-lg transition"
+        >
+          <h2 className="text-xl font-semibold text-white">
+            Afiliados Inactivos
+          </h2>
+
+          <p className="text-5xl font-bold text-white mt-4">
+            {inactive}
           </p>
         </div>
 

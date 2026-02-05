@@ -64,3 +64,23 @@ export const updateInscriptionDate = async (
 
   return response.data
 }
+
+/* ========================
+   INACTIVATE CUSTOMER
+======================== */
+export const inactivateCustomer = async (id: string) => {
+
+  const token = getToken()
+
+  const response = await axios.put(
+    `${API_URL}/customers/${id}/inactivate`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  )
+
+  return response.data
+}

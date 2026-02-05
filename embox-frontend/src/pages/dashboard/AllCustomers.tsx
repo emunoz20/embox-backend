@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { fetchCustomers } from "../../api/customers"
+import { fetchCustomers, inactivateCustomer } from "../../api/customers"
 import { useNavigate } from "react-router-dom"
 import { formatDateShort } from "../../utils/formatDate"
 
@@ -10,17 +10,51 @@ export default function AllCustomers() {
   const [customers, setCustomers] = useState<any[]>([])
   const [search, setSearch] = useState("")
 
+  /* ================= PAGINATION ================= */
+  const ITEMS_PER_PAGE = 10
+  const [currentPage, setCurrentPage] = useState(1)
+
+  /* ================= LOAD CUSTOMERS ================= */
+  const loadCustomers = async () => {
+    const data = await fetchCustomers()
+
+    // 🔥 SOLO MOSTRAR ACTIVOS
+    const activeCustomers = data.filter(c => c.status === "active")
+
+    setCustomers(activeCustomers)
+    setCurrentPage(1) // reset page al recargar
+  }
+
   useEffect(() => {
-    const load = async () => {
-      const data = await fetchCustomers()
-      setCustomers(data)
-    }
-    load()
+    loadCustomers()
   }, [])
 
+  /* ================= INACTIVATE ================= */
+  const handleInactivate = async (id: string) => {
+
+    const confirmAction = window.confirm(
+      "¿Deseas marcar este afiliado como inactivo?"
+    )
+
+    if (!confirmAction) return
+
+    await inactivateCustomer(id)
+    await loadCustomers()
+  }
+
+  /* ================= FILTER ================= */
   const filtered = customers.filter((c) =>
     c.full_name.toLowerCase().includes(search.toLowerCase()) ||
     c.phone.includes(search)
+  )
+
+  /* ================= PAGINATED DATA ================= */
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const paginated = filtered.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
   )
 
   return (
@@ -42,10 +76,14 @@ export default function AllCustomers() {
         type="text"
         placeholder="Buscar por nombre o teléfono"
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setCurrentPage(1)
+        }}
         className="w-full max-w-sm p-2 rounded bg-black border border-zinc-700 text-white"
       />
 
+      {/* TABLA */}
       <div className="bg-black border border-zinc-800 rounded overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-zinc-800 text-gray-300">
@@ -55,17 +93,19 @@ export default function AllCustomers() {
               <th className="p-3 text-left">Plan</th>
               <th className="p-3 text-left">Vence</th>
               <th className="p-3 text-left">Estado</th>
+              <th className="p-3 text-left">Acciones</th>
             </tr>
           </thead>
 
           <tbody>
-            {filtered.map((c) => (
+            {paginated.map((c) => (
               <tr key={c.id} className="border-t border-zinc-800">
                 <td className="p-3">{c.full_name}</td>
                 <td className="p-3">{c.phone}</td>
                 <td className="p-3">{c.plan_name}</td>
                 <td className="p-3">{formatDateShort(c.due_date)}</td>
 
+                {/* STATUS */}
                 <td
                   className={`p-3 font-semibold ${
                     new Date(c.due_date) >= new Date()
@@ -77,11 +117,59 @@ export default function AllCustomers() {
                     ? "active"
                     : "expired"}
                 </td>
+
+                {/* ACCIONES */}
+                <td className="p-3">
+                  <button
+                    onClick={() => handleInactivate(c.id)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm"
+                  >
+                    Inactivar
+                  </button>
+                </td>
               </tr>
             ))}
+
+            {paginated.length === 0 && (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="p-6 text-center text-gray-400"
+                >
+                  No se encontraron afiliados
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* PAGINATION CONTROLS */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center text-gray-300">
+          <span>
+            Página {currentPage} de {totalPages}
+          </span>
+
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+              className="px-3 py-1 rounded bg-zinc-800 disabled:opacity-40"
+            >
+              Anterior
+            </button>
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => p + 1)}
+              className="px-3 py-1 rounded bg-zinc-800 disabled:opacity-40"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   )

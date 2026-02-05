@@ -1,12 +1,17 @@
 // src/App.tsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+
 import Login from "./pages/Login"
 import AdminLayout from "./layout/AdminLayout"
+
 import Dashboard from "./pages/admin/Dashboard"
 import Users from "./pages/admin/Users"
 import Reports from "./pages/admin/Reports"
+
 import AllCustomers from "./pages/dashboard/AllCustomers"
 import UnpaidCustomers from "./pages/dashboard/UnpaidCustomers"
+import InactiveCustomers from "./pages/dashboard/InactiveCustomers"
+
 import { getToken } from "./services/auth"
 
 /* ====================
@@ -14,7 +19,9 @@ import { getToken } from "./services/auth"
 ==================== */
 const ProtectedRoute = () => {
   const token = getToken()
-  if (!token) return <Navigate to="/" replace />
+  if (!token) {
+    return <Navigate to="/" replace />
+  }
   return <AdminLayout />
 }
 
@@ -29,13 +36,16 @@ function App() {
         {/* LOGIN */}
         <Route path="/" element={<Login />} />
 
-        {/* RUTAS ADMIN PROTEGIDAS */}
+        {/* ZONA ADMIN PROTEGIDA */}
         <Route element={<ProtectedRoute />}>
 
+          {/* DASHBOARD */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/all" element={<AllCustomers />} />
           <Route path="/dashboard/unpaid" element={<UnpaidCustomers />} />
+          <Route path="/dashboard/inactive" element={<InactiveCustomers />} />
 
+          {/* OTRAS SECCIONES */}
           <Route path="/users" element={<Users />} />
           <Route path="/reports" element={<Reports />} />
 

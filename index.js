@@ -23,7 +23,7 @@ app.use(express.json())
 ========================= */
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY // SERVICE ROLE KEY
+  process.env.SUPABASE_KEY
 )
 
 /* =========================
@@ -41,7 +41,7 @@ const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     req.user = decoded
     next()
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: 'Invalid token' })
   }
 }
@@ -57,7 +57,6 @@ app.get('/', (req, res) => {
    AUTH ROUTES
 ========================= */
 
-// REGISTER (modo prueba)
 app.post('/auth/register', async (req, res) => {
   const { username, password } = req.body || {}
 
@@ -90,7 +89,6 @@ app.post('/auth/register', async (req, res) => {
   res.json({ message: 'User registered successfully' })
 })
 
-// LOGIN
 app.post('/auth/login', async (req, res) => {
   const { username, password } = req.body || {}
 
@@ -124,82 +122,15 @@ app.post('/auth/login', async (req, res) => {
 })
 
 /* =========================
-   RESET PASSWORD
-========================= */
-
-app.post('/auth/request-reset', async (req, res) => {
-  const { username } = req.body || {}
-
-  if (!username) {
-    return res.status(400).json({ error: 'Username required' })
-  }
-
-  const token = crypto.randomBytes(32).toString('hex')
-  const expires = new Date(Date.now() + 15 * 60 * 1000)
-
-  const { data, error } = await supabase
-    .from('users')
-    .update({
-      reset_token: token,
-      reset_token_expires: expires
-    })
-    .eq('username', username)
-    .select('id')
-
-  if (error || !data || data.length === 0) {
-    return res.status(404).json({ error: 'User not found' })
-  }
-
-  res.json({ message: 'Reset token generated', reset_token: token })
-})
-
-app.post('/auth/confirm-reset', async (req, res) => {
-  const { token, newPassword } = req.body || {}
-
-  if (!token || !newPassword) {
-    return res.status(400).json({ error: 'Token and newPassword required' })
-  }
-
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('reset_token', token)
-    .gte('reset_token_expires', new Date().toISOString())
-    .single()
-
-  if (error || !user) {
-    return res.status(400).json({ error: 'Invalid or expired token' })
-  }
-
-  const hashedPassword = await bcrypt.hash(newPassword, 10)
-
-  await supabase
-    .from('users')
-    .update({
-      password_hash: hashedPassword,
-      reset_token: null,
-      reset_token_expires: null
-    })
-    .eq('id', user.id)
-
-  res.json({ message: 'Password updated successfully' })
-})
-
-/* =========================
-   CUSTOMERS (PROTECTED)
+   CUSTOMERS
 ========================= */
 
 // TEST ADMIN
 app.get('/admin/test', authMiddleware, isAdmin, (req, res) => {
-  res.json({
-    message: 'Acceso admin confirmado',
-    user: req.user
-  })
+  res.json({ message: 'Acceso admin confirmado', user: req.user })
 })
 
-/**
- * GET customers
- */
+/* GET customers */
 app.get('/customers', authMiddleware, async (req, res) => {
   const { data, error } = await supabase
     .from('customers')
@@ -218,9 +149,7 @@ app.get('/customers', authMiddleware, async (req, res) => {
   res.json(result)
 })
 
-/**
- * CREATE customer (SOLO ADMIN)
- */
+/* CREATE customer */
 app.post('/customers', authMiddleware, isAdmin, async (req, res) => {
   const { full_name, phone, plan_name, inscription_date } = req.body || {}
 
@@ -241,21 +170,51 @@ app.post('/customers', authMiddleware, isAdmin, async (req, res) => {
     status: 'active'
   })
 
+  /* 🔥 MANEJO DE TELÉFONO DUPLICADO */
   if (error) {
+
+    // Postgres UNIQUE constraint violation
+    if (error.code === '23505') {
+      return res.status(409).json({
+        error: 'Phone already exists'
+      })
+    }
+
     return res.status(500).json({ error: error.message })
   }
 
   res.status(201).json({ message: 'Customer creado correctamente' })
 })
 
-/**
- * UPDATE inscription_date (SOLO ADMIN)
- */
+/* INACTIVATE customer */
+app.put(
+  '/customers/:id/inactivate',
+  authMiddleware,
+  isAdmin,
+  async (req, res) => {
+
+    const { id } = req.params
+
+    const { error } = await supabase
+      .from('customers')
+      .update({ status: 'inactive' })
+      .eq('id', id)
+
+    if (error) {
+      return res.status(500).json({ error: error.message })
+    }
+
+    res.json({ message: 'Cliente marcado como inactivo' })
+  }
+)
+
+/* UPDATE inscription_date (reactiva afiliado) */
 app.put(
   '/customers/:id/inscription-date',
   authMiddleware,
   isAdmin,
   async (req, res) => {
+
     const { id } = req.params
     const { inscription_date } = req.body
 
@@ -269,37 +228,18 @@ app.put(
 
     const { error } = await supabase
       .from('customers')
-      .update({ inscription_date, due_date })
+      .update({
+        inscription_date,
+        due_date,
+        status: 'active'
+      })
       .eq('id', id)
 
     if (error) {
       return res.status(500).json({ error: error.message })
     }
 
-    res.json({ message: 'Fecha actualizada', inscription_date, due_date })
-  }
-)
-
-/**
- * DELETE customer (SOLO ADMIN)
- */
-app.delete(
-  '/customers/:id',
-  authMiddleware,
-  isAdmin,
-  async (req, res) => {
-    const { id } = req.params
-
-    const { error } = await supabase
-      .from('customers')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      return res.status(500).json({ error: error.message })
-    }
-
-    res.json({ message: 'Customer eliminado correctamente' })
+    res.json({ message: 'Fecha actualizada y afiliado reactivado' })
   }
 )
 

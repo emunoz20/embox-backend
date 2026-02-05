@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { createCustomer } from "../../api/customers"
+import axios from "axios"
 
 export default function Users() {
   const [openModal, setOpenModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
@@ -14,7 +16,7 @@ export default function Users() {
 
   const handleSave = async () => {
     if (!fullName || !phone || !planName || !inscriptionDate) {
-      alert("Todos los campos son obligatorios")
+      setErrorMessage("Todos los campos son obligatorios")
       return
     }
 
@@ -27,21 +29,29 @@ export default function Users() {
       })
 
       setSuccessMessage(true)
+      setErrorMessage("")
 
       setFullName("")
       setPhone("")
       setPlanName("")
       setInscriptionDate(today)
 
-    } catch (error) {
+    } catch (error: any) {
+
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        setErrorMessage("Este número de teléfono ya está registrado")
+        return
+      }
+
+      setErrorMessage("Error al crear afiliado, Este número de teléfono ya está registrado")
       console.error(error)
-      alert("Error al crear afiliado")
     }
   }
 
   const handleCloseModal = () => {
     setOpenModal(false)
     setSuccessMessage(false)
+    setErrorMessage("")
   }
 
   return (
@@ -74,6 +84,13 @@ export default function Users() {
               Crear afiliado
             </h2>
 
+            {/* ERROR */}
+            {errorMessage && (
+              <div className="bg-red-900/30 border border-red-600 text-red-400 p-3 rounded mb-4 text-sm">
+                ⚠ {errorMessage}
+              </div>
+            )}
+
             {/* MENSAJE DE ÉXITO */}
             {successMessage && (
               <div className="flex items-center gap-3 bg-green-900/30 border border-green-600 text-green-400 p-3 rounded mb-4">
@@ -97,18 +114,21 @@ export default function Users() {
                 type="text"
                 placeholder="Teléfono"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  setPhone(e.target.value)
+                  setErrorMessage("")
+                }}
                 className="w-full p-2 rounded bg-black border border-zinc-700 text-white"
               />
 
               <select
-              value={planName}
-              onChange={(e) => setPlanName(e.target.value)}
-              className="w-full p-2 rounded bg-black border border-zinc-700 text-white"
-               >
-              <option value="">Seleccione plan</option>
-              <option value="Mensual">Mensual</option>
-             <option value="Anual">Anual</option>
+                value={planName}
+                onChange={(e) => setPlanName(e.target.value)}
+                className="w-full p-2 rounded bg-black border border-zinc-700 text-white"
+              >
+                <option value="">Seleccione plan</option>
+                <option value="Mensual">Mensual</option>
+                <option value="Anual">Anual</option>
               </select>
 
               <div>
