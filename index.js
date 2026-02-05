@@ -1,58 +1,57 @@
-require('dotenv').config();
+require('dotenv').config()
 
-const express = require('express');
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const cron = require('node-cron');
-const crypto = require('crypto');
-const { createClient } = require('@supabase/supabase-js');
-const { getMembershipStatus } = require('./dateStatus');
-const isAdmin = require('./middlewares/isAdmin');
+const express = require('express')
+const cors = require('cors')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
+const cron = require('node-cron')
+const crypto = require('crypto')
+const { createClient } = require('@supabase/supabase-js')
+const { getMembershipStatus } = require('./dateStatus')
+const isAdmin = require('./middlewares/isAdmin')
 
-
-const app = express();
+const app = express()
 
 /* =========================
    MIDDLEWARE
 ========================= */
-app.use(cors());
-app.use(express.json()); // obligatorio para leer req.body
+app.use(cors())
+app.use(express.json())
 
 /* =========================
    SUPABASE
 ========================= */
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY // ⚠️ debe ser SERVICE ROLE KEY
-);
+  process.env.SUPABASE_KEY // SERVICE ROLE KEY
+)
 
 /* =========================
    AUTH MIDDLEWARE
 ========================= */
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization
   if (!authHeader) {
-    return res.status(401).json({ error: 'No token provided' });
+    return res.status(401).json({ error: 'No token provided' })
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1]
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    req.user = decoded
+    next()
   } catch (err) {
-    return res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ error: 'Invalid token' })
   }
-};
+}
 
 /* =========================
    HEALTH CHECK
 ========================= */
 app.get('/', (req, res) => {
-  res.send('eMBox backend funcionando');
-});
+  res.send('eMBox backend funcionando')
+})
 
 /* =========================
    AUTH ROUTES
@@ -60,90 +59,83 @@ app.get('/', (req, res) => {
 
 // REGISTER (modo prueba)
 app.post('/auth/register', async (req, res) => {
-  const { username, password } = req.body || {};
+  const { username, password } = req.body || {}
 
   if (!username || !password) {
-    return res.status(400).json({
-      error: 'Username and password required'
-    });
+    return res.status(400).json({ error: 'Username and password required' })
   }
 
   const { data: existingUser } = await supabase
     .from('users')
     .select('id')
     .eq('username', username)
-    .single();
+    .single()
 
   if (existingUser) {
-    return res.status(409).json({
-      error: 'Username already exists'
-    });
+    return res.status(409).json({ error: 'Username already exists' })
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10)
 
   const { error } = await supabase.from('users').insert({
     username,
     password_hash: hashedPassword,
     role: 'admin'
-  });
+  })
 
   if (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message })
   }
 
-  res.json({
-    message: 'User registered successfully'
-  });
-});
+  res.json({ message: 'User registered successfully' })
+})
 
 // LOGIN
 app.post('/auth/login', async (req, res) => {
-  const { username, password } = req.body || {};
+  const { username, password } = req.body || {}
 
   if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
+    return res.status(400).json({ error: 'Username and password required' })
   }
 
   const { data: user, error } = await supabase
     .from('users')
     .select('*')
     .eq('username', username)
-    .single();
+    .single()
 
   if (error || !user) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    return res.status(401).json({ error: 'Invalid credentials' })
   }
 
-  const passwordMatch = await bcrypt.compare(password, user.password_hash);
+  const passwordMatch = await bcrypt.compare(password, user.password_hash)
 
   if (!passwordMatch) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    return res.status(401).json({ error: 'Invalid credentials' })
   }
 
   const token = jwt.sign(
     { id: user.id, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: '8h' }
-  );
+  )
 
-  res.json({ token });
-});
+  res.json({ token })
+})
 
 /* =========================
-   RESET PASSWORD (DEFINITIVO)
+   RESET PASSWORD
 ========================= */
 
-// Solicitar reset
 app.post('/auth/request-reset', async (req, res) => {
-  const { username } = req.body || {};
+  const { username } = req.body || {}
 
   if (!username) {
-    return res.status(400).json({ error: 'Username required' });
+    return res.status(400).json({ error: 'Username required' })
   }
 
-  const token = crypto.randomBytes(32).toString('hex');
-  const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+  const token = crypto.randomBytes(32).toString('hex')
+  const expires = new Date(Date.now() + 15 * 60 * 1000)
 
   const { data, error } = await supabase
     .from('users')
@@ -152,26 +144,20 @@ app.post('/auth/request-reset', async (req, res) => {
       reset_token_expires: expires
     })
     .eq('username', username)
-    .select('id');
+    .select('id')
 
   if (error || !data || data.length === 0) {
-    return res.status(404).json({ error: 'User not found' });
+    return res.status(404).json({ error: 'User not found' })
   }
 
-  res.json({
-    message: 'Reset token generated',
-    reset_token: token
-  });
-});
+  res.json({ message: 'Reset token generated', reset_token: token })
+})
 
-// Confirmar reset
 app.post('/auth/confirm-reset', async (req, res) => {
-  const { token, newPassword } = req.body || {};
+  const { token, newPassword } = req.body || {}
 
   if (!token || !newPassword) {
-    return res.status(400).json({
-      error: 'Token and newPassword required'
-    });
+    return res.status(400).json({ error: 'Token and newPassword required' })
   }
 
   const { data: user, error } = await supabase
@@ -179,15 +165,13 @@ app.post('/auth/confirm-reset', async (req, res) => {
     .select('*')
     .eq('reset_token', token)
     .gte('reset_token_expires', new Date().toISOString())
-    .single();
+    .single()
 
   if (error || !user) {
-    return res.status(400).json({
-      error: 'Invalid or expired token'
-    });
+    return res.status(400).json({ error: 'Invalid or expired token' })
   }
 
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const hashedPassword = await bcrypt.hash(newPassword, 10)
 
   await supabase
     .from('users')
@@ -196,61 +180,141 @@ app.post('/auth/confirm-reset', async (req, res) => {
       reset_token: null,
       reset_token_expires: null
     })
-    .eq('id', user.id);
+    .eq('id', user.id)
 
-  res.json({ message: 'Password updated successfully' });
-});
+  res.json({ message: 'Password updated successfully' })
+})
 
 /* =========================
    CUSTOMERS (PROTECTED)
 ========================= */
 
-app.get(
-  '/admin/test',
-  authMiddleware,
-  isAdmin,
-  (req, res) => {
-    res.json({
-      message: 'Acceso admin confirmado',
-      user: req.user
-    });
-  }
-);
+// TEST ADMIN
+app.get('/admin/test', authMiddleware, isAdmin, (req, res) => {
+  res.json({
+    message: 'Acceso admin confirmado',
+    user: req.user
+  })
+})
 
+/**
+ * GET customers
+ */
 app.get('/customers', authMiddleware, async (req, res) => {
   const { data, error } = await supabase
     .from('customers')
     .select('*')
-    .order('due_date', { ascending: true });
+    .order('due_date', { ascending: true })
 
   if (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message })
   }
 
-  const result = data.map(c => {
-    const calculatedStatus = getMembershipStatus(c.due_date);
+  const result = data.map(c => ({
+    ...c,
+    calculated_status: getMembershipStatus(c.due_date)
+  }))
 
-    return {
-      ...c,
-      calculated_status: calculatedStatus
-    };
-  });
+  res.json(result)
+})
 
-  res.json(result);
-});
+/**
+ * CREATE customer (SOLO ADMIN)
+ */
+app.post('/customers', authMiddleware, isAdmin, async (req, res) => {
+  const { full_name, phone, plan_name, inscription_date } = req.body || {}
+
+  if (!full_name || !phone || !plan_name || !inscription_date) {
+    return res.status(400).json({ error: 'All fields are required' })
+  }
+
+  const baseDate = new Date(inscription_date)
+  baseDate.setDate(baseDate.getDate() + 30)
+  const due_date = baseDate.toISOString().split('T')[0]
+
+  const { error } = await supabase.from('customers').insert({
+    full_name,
+    phone,
+    plan_name,
+    inscription_date,
+    due_date,
+    status: 'active'
+  })
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
+  res.status(201).json({ message: 'Customer creado correctamente' })
+})
+
+/**
+ * UPDATE inscription_date (SOLO ADMIN)
+ */
+app.put(
+  '/customers/:id/inscription-date',
+  authMiddleware,
+  isAdmin,
+  async (req, res) => {
+    const { id } = req.params
+    const { inscription_date } = req.body
+
+    if (!inscription_date) {
+      return res.status(400).json({ error: 'inscription_date is required' })
+    }
+
+    const baseDate = new Date(inscription_date)
+    baseDate.setDate(baseDate.getDate() + 30)
+    const due_date = baseDate.toISOString().split('T')[0]
+
+    const { error } = await supabase
+      .from('customers')
+      .update({ inscription_date, due_date })
+      .eq('id', id)
+
+    if (error) {
+      return res.status(500).json({ error: error.message })
+    }
+
+    res.json({ message: 'Fecha actualizada', inscription_date, due_date })
+  }
+)
+
+/**
+ * DELETE customer (SOLO ADMIN)
+ */
+app.delete(
+  '/customers/:id',
+  authMiddleware,
+  isAdmin,
+  async (req, res) => {
+    const { id } = req.params
+
+    const { error } = await supabase
+      .from('customers')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      return res.status(500).json({ error: error.message })
+    }
+
+    res.json({ message: 'Customer eliminado correctamente' })
+  }
+)
 
 /* =========================
    CRON JOB
 ========================= */
 cron.schedule('* * * * *', async () => {
-  console.log('Ejecutando recordatorio automático');
-});
+  console.log('Ejecutando recordatorio automático')
+})
 
 /* =========================
    SERVER
 ========================= */
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  console.log(`Server running on port ${PORT}`)
+})
