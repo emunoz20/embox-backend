@@ -47,7 +47,8 @@ export default function Sidebar() {
 
       {/* FOOTER */}
       <div className="p-4 border-t border-zinc-800 text-gray-500 text-xs text-center space-y-1">
-        <div>Powered by Erwin Muñoz (eMBOX) </div>
+        <div>Licensed to QJ Fitness</div>
+		<div>Powered by eMBOX – Developed by Erwin Muñoz </div>
         <div>© {new Date().getFullYear()} QJ Fitness</div>
       </div>
 

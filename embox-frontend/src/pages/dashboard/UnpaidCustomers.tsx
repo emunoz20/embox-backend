@@ -14,6 +14,9 @@ export default function UnpaidCustomers() {
     new Date().toISOString().split("T")[0]
   )
 
+  const [planName, setPlanName] = useState("Mensual")
+  const [manualDueDate, setManualDueDate] = useState("")
+
   const [toast, setToast] = useState("")
 
   /* ================= PAGINATION ================= */
@@ -45,10 +48,14 @@ export default function UnpaidCustomers() {
 
     await updateInscriptionDate(
       selectedCustomer.id,
-      paymentDate
+      paymentDate,
+      planName,
+      manualDueDate || null
     )
 
     setSelectedCustomer(null)
+    setManualDueDate("")
+    setPlanName("Mensual")
     setToast("Pago registrado correctamente")
 
     await loadCustomers()
@@ -113,7 +120,10 @@ export default function UnpaidCustomers() {
 
                 <td className="p-3">
                   <button
-                    onClick={() => setSelectedCustomer(c)}
+                    onClick={() => {
+                      setSelectedCustomer(c)
+                      setPlanName(c.plan_name || "Mensual")
+                    }}
                     className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
                   >
                     ✔ Pagó
@@ -175,10 +185,35 @@ export default function UnpaidCustomers() {
             {selectedCustomer.full_name}
           </p>
 
+          {/* Fecha de pago */}
+          <label className="text-sm text-gray-400">Fecha de pago</label>
           <input
             type="date"
             value={paymentDate}
             onChange={(e) => setPaymentDate(e.target.value)}
+            className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white mb-3"
+          />
+
+          {/* Plan */}
+          <label className="text-sm text-gray-400">Plan</label>
+          <select
+            value={planName}
+            onChange={(e) => setPlanName(e.target.value)}
+            className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white mb-3"
+          >
+            <option value="Mensual">Mensual</option>
+            <option value="Bimestral">Bimestral</option>
+            <option value="Trimestral">Trimestral</option>
+          </select>
+
+          {/* Fecha manual */}
+          <label className="text-sm text-gray-400">
+            Fecha de vencimiento manual (opcional)
+          </label>
+          <input
+            type="date"
+            value={manualDueDate}
+            onChange={(e) => setManualDueDate(e.target.value)}
             className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white mb-5"
           />
 

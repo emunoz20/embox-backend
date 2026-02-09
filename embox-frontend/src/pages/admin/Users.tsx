@@ -9,14 +9,15 @@ export default function Users() {
 
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
-  const [planName, setPlanName] = useState("")
+  const [planName, setPlanName] = useState("Mensual")
 
   const today = new Date().toISOString().split("T")[0]
   const [inscriptionDate, setInscriptionDate] = useState(today)
+  const [manualDueDate, setManualDueDate] = useState("")
 
   const handleSave = async () => {
     if (!fullName || !phone || !planName || !inscriptionDate) {
-      setErrorMessage("Todos los campos son obligatorios")
+      setErrorMessage("Todos los campos obligatorios deben completarse")
       return
     }
 
@@ -25,7 +26,8 @@ export default function Users() {
         full_name: fullName,
         phone,
         plan_name: planName,
-        inscription_date: inscriptionDate
+        inscription_date: inscriptionDate,
+        manual_due_date: manualDueDate || undefined
       })
 
       setSuccessMessage(true)
@@ -33,8 +35,9 @@ export default function Users() {
 
       setFullName("")
       setPhone("")
-      setPlanName("")
+      setPlanName("Mensual")
       setInscriptionDate(today)
+      setManualDueDate("")
 
     } catch (error: any) {
 
@@ -43,7 +46,7 @@ export default function Users() {
         return
       }
 
-      setErrorMessage("Error al crear afiliado, Este número de teléfono ya está registrado")
+      setErrorMessage("Error al crear afiliado")
       console.error(error)
     }
   }
@@ -121,27 +124,41 @@ export default function Users() {
                 className="w-full p-2 rounded bg-black border border-zinc-700 text-white"
               />
 
+              {/* PLAN */}
               <select
                 value={planName}
                 onChange={(e) => setPlanName(e.target.value)}
                 className="w-full p-2 rounded bg-black border border-zinc-700 text-white"
               >
-                <option value="">Seleccione plan</option>
                 <option value="Mensual">Mensual</option>
-                <option value="Anual">Anual</option>
+                <option value="Bimestral">Bimestral</option>
+                <option value="Trimestral">Trimestral</option>
               </select>
 
+              {/* FECHA DE INSCRIPCIÓN */}
               <div>
+                <label className="text-xs text-gray-400">
+                  Fecha de inscripción
+                </label>
                 <input
                   type="date"
                   value={inscriptionDate}
                   onChange={(e) => setInscriptionDate(e.target.value)}
                   className="w-full p-2 rounded bg-black border border-zinc-700 text-white"
                 />
+              </div>
 
-                <p className="text-xs text-gray-400 mt-1">
-                  Formato visible: MM/DD/AAAA
-                </p>
+              {/* FECHA MANUAL */}
+              <div>
+                <label className="text-xs text-gray-400">
+                  Fecha de vencimiento manual (opcional)
+                </label>
+                <input
+                  type="date"
+                  value={manualDueDate}
+                  onChange={(e) => setManualDueDate(e.target.value)}
+                  className="w-full p-2 rounded bg-black border border-zinc-700 text-white"
+                />
               </div>
 
             </div>

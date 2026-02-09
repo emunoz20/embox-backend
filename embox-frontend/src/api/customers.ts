@@ -26,6 +26,7 @@ export const createCustomer = async (data: {
   phone: string
   plan_name: string
   inscription_date: string
+  manual_due_date?: string
 }) => {
   const token = getToken()
 
@@ -47,14 +48,20 @@ export const createCustomer = async (data: {
 ======================== */
 export const updateInscriptionDate = async (
   id: string,
-  inscriptionDate: string
+  inscriptionDate: string,
+  planName: string,
+  manualDueDate?: string | null
 ) => {
 
   const token = getToken()
 
   const response = await axios.put(
     `${API_URL}/customers/${id}/inscription-date`,
-    { inscription_date: inscriptionDate },
+    {
+      inscription_date: inscriptionDate,
+      plan_name: planName,
+      manual_due_date: manualDueDate
+    },
     {
       headers: {
         Authorization: `Bearer ${token}`

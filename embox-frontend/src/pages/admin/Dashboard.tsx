@@ -66,7 +66,7 @@ export default function Dashboard() {
           className="cursor-pointer bg-green-600 hover:bg-green-700 p-6 rounded-xl shadow-lg transition"
         >
           <h2 className="text-xl font-semibold text-white">
-            Total Asociados
+            Total Afiliados
           </h2>
 
           <p className="text-5xl font-bold text-white mt-4">

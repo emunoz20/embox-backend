@@ -27,6 +27,34 @@ const supabase = createClient(
 )
 
 /* =========================
+   DATE CALCULATION
+========================= */
+function calculateDueDate(planName, inscriptionDate, manualDueDate) {
+  // Si hay fecha manual, usar esa
+  if (manualDueDate) {
+    return manualDueDate
+  }
+
+  const baseDate = new Date(inscriptionDate)
+
+  switch (planName) {
+    case 'Mensual':
+      baseDate.setMonth(baseDate.getMonth() + 1)
+      break
+    case 'Bimestral':
+      baseDate.setMonth(baseDate.getMonth() + 2)
+      break
+    case 'Trimestral':
+      baseDate.setMonth(baseDate.getMonth() + 3)
+      break
+    default:
+      baseDate.setMonth(baseDate.getMonth() + 1)
+  }
+
+  return baseDate.toISOString().split('T')[0]
+}
+
+/* =========================
    AUTH MIDDLEWARE
 ========================= */
 const authMiddleware = (req, res, next) => {
@@ -151,15 +179,23 @@ app.get('/customers', authMiddleware, async (req, res) => {
 
 /* CREATE customer */
 app.post('/customers', authMiddleware, isAdmin, async (req, res) => {
-  const { full_name, phone, plan_name, inscription_date } = req.body || {}
+  const {
+    full_name,
+    phone,
+    plan_name,
+    inscription_date,
+    manual_due_date
+  } = req.body || {}
 
   if (!full_name || !phone || !plan_name || !inscription_date) {
     return res.status(400).json({ error: 'All fields are required' })
   }
 
-  const baseDate = new Date(inscription_date)
-  baseDate.setDate(baseDate.getDate() + 30)
-  const due_date = baseDate.toISOString().split('T')[0]
+  const due_date = calculateDueDate(
+    plan_name,
+    inscription_date,
+    manual_due_date
+  )
 
   const { error } = await supabase.from('customers').insert({
     full_name,
@@ -172,8 +208,6 @@ app.post('/customers', authMiddleware, isAdmin, async (req, res) => {
 
   /* 🔥 MANEJO DE TELÉFONO DUPLICADO */
   if (error) {
-
-    // Postgres UNIQUE constraint violation
     if (error.code === '23505') {
       return res.status(409).json({
         error: 'Phone already exists'
@@ -192,7 +226,6 @@ app.put(
   authMiddleware,
   isAdmin,
   async (req, res) => {
-
     const { id } = req.params
 
     const { error } = await supabase
@@ -214,22 +247,26 @@ app.put(
   authMiddleware,
   isAdmin,
   async (req, res) => {
-
     const { id } = req.params
-    const { inscription_date } = req.body
+    const { inscription_date, plan_name, manual_due_date } = req.body
 
-    if (!inscription_date) {
-      return res.status(400).json({ error: 'inscription_date is required' })
+    if (!inscription_date || !plan_name) {
+      return res.status(400).json({
+        error: 'inscription_date and plan_name are required'
+      })
     }
 
-    const baseDate = new Date(inscription_date)
-    baseDate.setDate(baseDate.getDate() + 30)
-    const due_date = baseDate.toISOString().split('T')[0]
+    const due_date = calculateDueDate(
+      plan_name,
+      inscription_date,
+      manual_due_date
+    )
 
     const { error } = await supabase
       .from('customers')
       .update({
         inscription_date,
+        plan_name,
         due_date,
         status: 'active'
       })
