@@ -11,6 +11,7 @@ import Reports from "./pages/admin/Reports"
 import AllCustomers from "./pages/dashboard/AllCustomers"
 import UnpaidCustomers from "./pages/dashboard/UnpaidCustomers"
 import InactiveCustomers from "./pages/dashboard/InactiveCustomers"
+import Finance from "./pages/dashboard/Finance"   // ← NUEVO
 
 import { getToken } from "./services/auth"
 
@@ -44,6 +45,7 @@ function App() {
           <Route path="/dashboard/all" element={<AllCustomers />} />
           <Route path="/dashboard/unpaid" element={<UnpaidCustomers />} />
           <Route path="/dashboard/inactive" element={<InactiveCustomers />} />
+          <Route path="/dashboard/finance" element={<Finance />} /> {/* ← NUEVO */}
 
           {/* OTRAS SECCIONES */}
           <Route path="/users" element={<Users />} />

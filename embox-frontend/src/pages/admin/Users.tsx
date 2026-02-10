@@ -10,13 +10,14 @@ export default function Users() {
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
   const [planName, setPlanName] = useState("Mensual")
+  const [monthlyFee, setMonthlyFee] = useState("")
 
   const today = new Date().toISOString().split("T")[0]
   const [inscriptionDate, setInscriptionDate] = useState(today)
   const [manualDueDate, setManualDueDate] = useState("")
 
   const handleSave = async () => {
-    if (!fullName || !phone || !planName || !inscriptionDate) {
+    if (!fullName || !phone || !planName || !inscriptionDate || !monthlyFee) {
       setErrorMessage("Todos los campos obligatorios deben completarse")
       return
     }
@@ -27,7 +28,8 @@ export default function Users() {
         phone,
         plan_name: planName,
         inscription_date: inscriptionDate,
-        manual_due_date: manualDueDate || undefined
+        manual_due_date: manualDueDate || undefined,
+        monthly_fee: Number(monthlyFee)
       })
 
       setSuccessMessage(true)
@@ -36,6 +38,7 @@ export default function Users() {
       setFullName("")
       setPhone("")
       setPlanName("Mensual")
+      setMonthlyFee("")
       setInscriptionDate(today)
       setManualDueDate("")
 
@@ -94,7 +97,7 @@ export default function Users() {
               </div>
             )}
 
-            {/* MENSAJE DE ÉXITO */}
+            {/* ÉXITO */}
             {successMessage && (
               <div className="flex items-center gap-3 bg-green-900/30 border border-green-600 text-green-400 p-3 rounded mb-4">
                 <span className="text-2xl">✔</span>
@@ -134,6 +137,15 @@ export default function Users() {
                 <option value="Bimestral">Bimestral</option>
                 <option value="Trimestral">Trimestral</option>
               </select>
+
+              {/* MENSUALIDAD */}
+              <input
+                type="number"
+                placeholder="Mensualidad (COP)"
+                value={monthlyFee}
+                onChange={(e) => setMonthlyFee(e.target.value)}
+                className="w-full p-2 rounded bg-black border border-zinc-700 text-white"
+              />
 
               {/* FECHA DE INSCRIPCIÓN */}
               <div>

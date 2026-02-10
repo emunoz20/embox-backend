@@ -246,65 +246,8 @@ app.get('/finance/summary', authMiddleware, async (req, res) => {
   })
 })
 
-/* ================= REPORT EXCEL ================= */
-
-app.get('/reports/finance/excel', authMiddleware, async (req, res) => {
-  let { start, end } = req.query
-
-  const { data } = await supabase
-    .from('transactions')
-    .select('*')
-    .gte('date', start)
-    .lte('date', end)
-    .order('date', { ascending: true })
-
-  let income = 0
-  let expense = 0
-
-  data.forEach(t => {
-    if (t.type === 'income') income += Number(t.amount)
-    if (t.type === 'expense') expense += Number(t.amount)
-  })
-
-  const workbook = new ExcelJS.Workbook()
-  const sheet = workbook.addWorksheet('Reporte financiero')
-
-  sheet.columns = [
-    { header: 'Fecha', key: 'date', width: 15 },
-    { header: 'Tipo', key: 'type', width: 15 },
-    { header: 'Concepto', key: 'concept', width: 30 },
-    { header: 'Valor (COP)', key: 'amount', width: 20 }
-  ]
-
-  data.forEach(t => {
-    sheet.addRow({
-      date: t.date,
-      type: t.type,
-      concept: t.concept,
-      amount: t.amount
-    })
-  })
-
-  sheet.addRow([])
-  sheet.addRow(['', '', 'TOTAL INGRESOS', income])
-  sheet.addRow(['', '', 'TOTAL EGRESOS', expense])
-  sheet.addRow(['', '', 'BALANCE', income - expense])
-
-  res.setHeader(
-    'Content-Type',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  )
-  res.setHeader(
-    'Content-Disposition',
-    'attachment; filename=reporte_financiero.xlsx'
-  )
-
-  await workbook.xlsx.write(res)
-  res.end()
-})
-
 /* ================= REPORT PDF ================= */
-/* (tu endpoint actual sin cambios) */
+
 app.get('/reports/finance/pdf', authMiddleware, async (req, res) => {
   let { start, end } = req.query
 

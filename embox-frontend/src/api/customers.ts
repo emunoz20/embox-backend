@@ -27,6 +27,7 @@ export const createCustomer = async (data: {
   plan_name: string
   inscription_date: string
   manual_due_date?: string
+  monthly_fee: number
 }) => {
   const token = getToken()
 
@@ -82,6 +83,53 @@ export const inactivateCustomer = async (id: string) => {
   const response = await axios.put(
     `${API_URL}/customers/${id}/inactivate`,
     {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  )
+
+  return response.data
+}
+
+/* ========================
+   FINANCE SUMMARY (WITH RANGE)
+======================== */
+export const getFinanceSummary = async (
+  start?: string,
+  end?: string
+) => {
+  const token = getToken()
+
+  let url = `${API_URL}/finance/summary`
+
+  if (start && end) {
+    url += `?start=${start}&end=${end}`
+  }
+
+  const response = await axios.get(url, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+
+  return response.data
+}
+
+/* ========================
+   CREATE EXPENSE
+======================== */
+export const createExpense = async (data: {
+  concept: string
+  amount: number
+  date: string
+}) => {
+  const token = getToken()
+
+  const response = await axios.post(
+    `${API_URL}/transactions/expense`,
+    data,
     {
       headers: {
         Authorization: `Bearer ${token}`

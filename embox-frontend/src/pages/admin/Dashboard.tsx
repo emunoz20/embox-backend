@@ -58,7 +58,7 @@ export default function Dashboard() {
       </h1>
 
       {/* CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
         {/* TOTAL AFILIADOS */}
         <div
@@ -99,6 +99,20 @@ export default function Dashboard() {
 
           <p className="text-5xl font-bold text-white mt-4">
             {inactive}
+          </p>
+        </div>
+
+        {/* FINANZAS */}
+        <div
+          onClick={() => navigate("/dashboard/finance")}
+          className="cursor-pointer bg-blue-600 hover:bg-blue-700 p-6 rounded-xl shadow-lg transition"
+        >
+          <h2 className="text-xl font-semibold text-white">
+            Finanzas
+          </h2>
+
+          <p className="text-lg text-white mt-4">
+            Ver ingresos y egresos
           </p>
         </div>
 

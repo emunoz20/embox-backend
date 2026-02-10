@@ -8,3 +8,11 @@
 
 /* Utilidades (márgenes, colores, textos, etc.) */
 @tailwind utilities;
+
+/* =========================
+   DATE PICKER ICON (ROJO)
+========================= */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(36%) sepia(93%) saturate(7494%) hue-rotate(352deg) brightness(97%) contrast(119%);
+  cursor: pointer;
+}
