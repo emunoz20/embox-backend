@@ -304,7 +304,7 @@ app.get('/reports/finance/excel', authMiddleware, async (req, res) => {
 })
 
 /* ================= REPORT PDF ================= */
-/* (tu endpoint actual sin cambios) */
+
 app.get('/reports/finance/pdf', authMiddleware, async (req, res) => {
   let { start, end } = req.query
 
@@ -382,7 +382,7 @@ app.get('/reports/finance/pdf', authMiddleware, async (req, res) => {
     y += 18
   })
 
-   y += 40
+  y += 40
   doc.y = y
 
   doc.moveDown()
@@ -396,7 +396,92 @@ app.get('/reports/finance/pdf', authMiddleware, async (req, res) => {
   doc.end()
 })
 
+/* ================= CUSTOMER REPORT PDF ================= */
+
+app.get('/reports/customers/pdf', authMiddleware, async (req, res) => {
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .order('due_date', { ascending: true })
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  const pending = data.filter(c => c.status === 'active' && c.due_date <= today)
+  const active = data.filter(c => c.status === 'active' && c.due_date > today)
+  const inactive = data.filter(c => c.status === 'inactive')
+
+  const doc = new PDFDocument({ margin: 40 })
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename=reporte_afiliados.pdf'
+  )
+
+  doc.pipe(res)
+
+  const logoPath = path.join(__dirname, 'logoqj.jpg')
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, 40, 20, { width: 80 })
+  }
+
+  doc.moveDown(3)
+  doc.fontSize(12)
+  doc.text('Reporte de Afiliados', { align: 'center' })
+  doc.moveDown()
+
+  const startX = 40
+  const colWidths = [200, 150, 120]
+  const headers = ['Nombre', 'Teléfono', 'Vencimiento']
+
+  const drawSection = (title, customers) => {
+    doc.moveDown()
+    doc.fontSize(10).font('Helvetica-Bold').text(title)
+    doc.moveDown(0.5)
+
+    let y = doc.y
+    let x = startX
+
+    doc.fontSize(8)
+    headers.forEach((h, i) => {
+      doc.rect(x, y, colWidths[i], 16).stroke()
+      doc.text(h, x + 4, y + 3, { width: colWidths[i] - 8 })
+      x += colWidths[i]
+    })
+
+    y += 18
+
+    customers.forEach(c => {
+      if (y > 720) {
+        doc.addPage()
+        y = 50
+      }
+
+      let x = startX
+      const row = [c.full_name, c.phone, c.due_date]
+
+      row.forEach((cell, i) => {
+        doc.rect(x, y, colWidths[i], 16).stroke()
+        doc.text(cell, x + 4, y + 3, {
+          width: colWidths[i] - 8
+        })
+        x += colWidths[i]
+      })
+
+      y += 18
+    })
+  }
+
+  drawSection('PENDIENTES', pending)
+  drawSection('ACTIVOS', active)
+  drawSection('INACTIVOS', inactive)
+
+  doc.end()
+})
+
 /* ================= SERVER ================= */
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)

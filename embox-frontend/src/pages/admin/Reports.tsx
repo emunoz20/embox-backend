@@ -30,6 +30,15 @@ export default function Reports() {
     link.click()
   }
 
+  /* ================= AFILIADOS ================= */
+
+  const handleExportCustomersPDF = async () => {
+    const url = `http://localhost:3000/reports/customers/pdf`
+    await downloadFile(url, "reporte_afiliados.pdf")
+  }
+
+  /* ================= FINANCIERO ================= */
+
   const handleExportExcel = async () => {
     const url = `http://localhost:3000/reports/finance/excel?start=${startDate}&end=${endDate}`
     await downloadFile(url, "reporte_financiero.xlsx")
@@ -41,57 +50,82 @@ export default function Reports() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
 
-      <h1 className="text-2xl font-bold text-white">
-        Reportes financieros
-      </h1>
+      {/* ================================= */}
+      {/* 🔥 REPORTE DE AFILIADOS */}
+      {/* ================================= */}
 
-      {/* FILTRO DE FECHAS */}
-      <div className="bg-black border border-zinc-800 rounded p-6 flex flex-col md:flex-row gap-4 items-end">
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-white">
+          Reporte de Afiliados
+        </h1>
 
-        <div>
-          <label className="text-xs text-gray-400">
-            Desde (MM/DD/AAAA)
-          </label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="block p-2 rounded bg-black border border-zinc-700 text-white"
-          />
+        <div className="flex gap-4">
+          <button
+            onClick={handleExportCustomersPDF}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold"
+          >
+            Descargar PDF Afiliados
+          </button>
         </div>
-
-        <div>
-          <label className="text-xs text-gray-400">
-            Hasta (MM/DD/AAAA)
-          </label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="block p-2 rounded bg-black border border-zinc-700 text-white"
-          />
-        </div>
-
       </div>
 
-      {/* BOTONES */}
-      <div className="flex gap-4">
+      {/* ================================= */}
+      {/* 📊 REPORTE FINANCIERO */}
+      {/* ================================= */}
 
-        <button
-          onClick={handleExportExcel}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
-        >
-          Descargar Excel
-        </button>
+      <div className="space-y-8">
 
-        <button
-          onClick={handleExportPDF}
-          className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold"
-        >
-          Descargar PDF
-        </button>
+        <h1 className="text-2xl font-bold text-white">
+          Reportes financieros
+        </h1>
+
+        <div className="bg-black border border-zinc-800 rounded p-6 flex flex-col md:flex-row gap-4 items-end">
+
+          <div>
+            <label className="text-xs text-gray-400">
+              Desde
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="block p-2 rounded bg-black border border-zinc-700 text-white"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-400">
+              Hasta
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="block p-2 rounded bg-black border border-zinc-700 text-white"
+            />
+          </div>
+
+        </div>
+
+        <div className="flex gap-4">
+
+          <button
+            onClick={handleExportExcel}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
+          >
+            Descargar Excel
+          </button>
+
+          <button
+            onClick={handleExportPDF}
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold"
+          >
+            Descargar PDF
+          </button>
+
+        </div>
 
       </div>
 
